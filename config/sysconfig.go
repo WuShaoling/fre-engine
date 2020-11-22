@@ -15,6 +15,7 @@ type SysConfig struct {
 	ServePort            string `yaml:"servePort"`            // 服务监听的地址
 	ContainerCodePath    string `yaml:"containerCodePath"`    // 容器内代码的根目录
 	ZygoteUnixSocketFile string `yaml:"zygoteUnixSocketFile"` // 容器内代码的根目录
+	EnableZygote         bool   `yaml:"enableZygote"`         // 是否开启 Zygote
 }
 
 var SysConfigInstance *SysConfig
@@ -26,6 +27,7 @@ func InitSysConfig(configPath string) {
 		useConfigFromFile(configPath)
 	}
 	initFilePath()
+	log.Infof("config: %+v", *SysConfigInstance)
 }
 
 func useDefaultConfig() {
@@ -36,12 +38,11 @@ func useDefaultConfig() {
 		ServePort:            "80",
 		ContainerCodePath:    "/code",
 		ZygoteUnixSocketFile: "/tmp/free.zygote.sock",
+		EnableZygote:         true,
 	}
-	log.Infof("use default config %+v", *SysConfigInstance)
 }
 
 func useConfigFromFile(configPath string) {
-	log.Infof("[info] load config from %s", configPath)
 	SysConfigInstance = &SysConfig{}
 
 	f, err := os.Open(configPath)
@@ -55,6 +56,16 @@ func useConfigFromFile(configPath string) {
 }
 
 func initFilePath() {
+	_ = os.Remove(SysConfigInstance.ZygoteUnixSocketFile)
+
+	if SysConfigInstance.RootPath[0] != '/' {
+		pwd, err := os.Getwd()
+		if err != nil {
+			log.Fatal("initFilePath error, ", err)
+		}
+		SysConfigInstance.RootPath = path.Join(pwd, SysConfigInstance.RootPath)
+	}
+
 	if err := util.MkdirIfNotExist(GetLogPath()); err != nil {
 		log.Fatal("[error]", err)
 	}

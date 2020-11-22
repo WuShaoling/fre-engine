@@ -43,6 +43,6 @@ func main() {
 	r := gin.Default()
 	api.SetContainerRouter(freEngine, r)
 
-	log.Println("listen on :" + config.SysConfigInstance.ServePort)
+	log.Println("server listen on :" + config.SysConfigInstance.ServePort)
 	_ = r.Run(":" + config.SysConfigInstance.ServePort)
 }

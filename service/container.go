@@ -2,7 +2,6 @@ package service
 
 import (
 	"engine/util"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -12,6 +11,7 @@ func (engine *Engine) CreateContainer(ctx *gin.Context) {
 	templateName := ctx.Param("template")
 	functionParam := make(map[string]interface{})
 	sync := ctx.DefaultQuery("sync", "false")
+	zygote := ctx.DefaultQuery("zygote", "false") // 默认不使用
 
 	if err := ctx.ShouldBindJSON(&functionParam); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "BadParameter"})
@@ -31,17 +31,16 @@ func (engine *Engine) CreateContainer(ctx *gin.Context) {
 	}
 
 	requestId := util.UniqueId()
-	id, err := engine.containerService.Create(requestId, runtime, template, functionParam)
+	id, err := engine.containerService.Create(requestId, runtime, template, zygote, functionParam)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	if sync != "true" {
+	if sync == "true" {
 		c := make(chan gin.H, 1)
 		engine.functionResultWaitChanMap[requestId] = c
 		response := <-c
-		fmt.Println(response)
 		ctx.JSON(http.StatusOK, response)
 	} else {
 		ctx.JSON(http.StatusOK, gin.H{"id": id})

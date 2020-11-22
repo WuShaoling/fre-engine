@@ -11,7 +11,7 @@ import (
 
 // 容器启动，生成 pid
 func (service *Service) ContainerProcessStartHandler(id string, pid int, timestamp int64) {
-	log.Infof("ContainerProcessStartHandler: id=%s, pid=%d, timestamp=%d", id, pid, timestamp)
+	log.Infof("container(id=%s) process(pid=%d) start at %d", id, pid, timestamp)
 
 	// 检查基本信息
 	containerInfo := service.getAndCheckContainer(id)
@@ -27,7 +27,7 @@ func (service *Service) ContainerProcessStartHandler(id string, pid int, timesta
 
 // 容器进程退出，即父进程 wait 方法返回
 func (service *Service) ContainerProcessEndHandler(id string, timestamp int64) {
-	log.Infof("ContainerProcessEndHandler: id=%s, timestamp=%d", id, timestamp)
+	log.Infof("container(id=%s) process end at %d", id, timestamp)
 
 	container := service.getAndCheckContainer(id)
 	if container == nil {
@@ -67,7 +67,7 @@ func (service *Service) ContainerProcessEndHandler(id string, timestamp int64) {
 
 // 函数执行完成，bootstrap 上报结果
 func (service *Service) FunctionEndHandler(result model.FunctionEndRequest) {
-	log.Infof("FunctionEndHandler: id=%s", result.Id)
+	log.Infof("container(id=%s) exec function end", result.Id)
 
 	container := service.getAndCheckContainer(result.Id)
 	if container == nil {

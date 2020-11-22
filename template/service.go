@@ -4,6 +4,7 @@ import (
 	"engine/config"
 	"engine/util"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"path"
 )
 
@@ -16,6 +17,7 @@ func NewTemplateService() *Service {
 		dataMap: make(map[string]*Template),
 	}
 	util.LoadJsonDataFromFile(service.getDataFilePath(), &service.dataMap)
+	log.Info("start template service ok!")
 	return service
 }
 

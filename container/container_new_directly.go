@@ -17,10 +17,12 @@ import (
 // 直接启动容器进程
 
 func (service *Service) newContainerProcessDirectly(runtime *runtime.Runtime, template *template.Template, container *Container) error {
+	log.Infof("new container process(%s) directly, runtime=%s, template=%s", container.Id, runtime.Name, template.Name)
+
 	// new pipe
 	readPipe, writePipe, err := os.Pipe()
 	if err != nil {
-		log.Errorf("newContainerProcessDirectly(id=%s) new pipe error, %+v", container.Id, err)
+		log.Errorf("new container(id=%s) process directly: new pipe error, %+v", container.Id, err)
 		return err
 	}
 	defer writePipe.Close()
@@ -28,7 +30,7 @@ func (service *Service) newContainerProcessDirectly(runtime *runtime.Runtime, te
 	// new process
 	initCmd, err := os.Readlink("/proc/self/exe")
 	if err != nil {
-		log.Errorf("newContainerProcessDirectly get init process error %v", err)
+		log.Errorf("new container(id=%s) process directly: get init process error, %+v", err)
 		return err
 	}
 	containerProcess := exec.Command(initCmd, "exec")
@@ -42,7 +44,7 @@ func (service *Service) newContainerProcessDirectly(runtime *runtime.Runtime, te
 	containerProcess.Stdout = os.Stdout
 	containerProcess.Stderr = os.Stderr
 	if err := containerProcess.Start(); err != nil {
-		log.Errorf("newContainerProcessDirectly(id=%s) start process error, %+v", container.Id, err)
+		log.Errorf("new container(id=%s) process directly: start process error, %+v", container.Id, err)
 		service.onNewContainerProcessDirectlyError(readPipe, nil)
 		return err
 	}
@@ -66,7 +68,7 @@ func (service *Service) newContainerProcessDirectly(runtime *runtime.Runtime, te
 	// 发送运行命令，例如：python3 bootstrap.py|param str, |为解析命令的分隔符
 	command := strings.Join(runtime.Entrypoint, " ") + "|" + functionExecContext
 	if _, err := writePipe.Write([]byte(command)); err != nil {
-		log.Errorf("sendInitCommand failed, command=%s, error=%v", command, err)
+		log.Errorf("new container(id=%s) process directly: send init command error, %+v", command, err)
 		service.onNewContainerProcessDirectlyError(readPipe, containerProcess)
 		return err
 	}
@@ -74,7 +76,7 @@ func (service *Service) newContainerProcessDirectly(runtime *runtime.Runtime, te
 	// 异步 wait 容器进程退出
 	go func() {
 		if err := containerProcess.Wait(); err != nil {
-			log.Errorf("wait error, id=%s, pid=%d, error=%+v", container.Id, containerProcess.Process.Pid, err)
+			log.Errorf("wait container(id=%s) process error, pid=%d, error=%+v", container.Id, containerProcess.Process.Pid, err)
 		}
 		service.ContainerProcessEndHandler(container.Id, time.Now().UnixNano()/1e3)
 	}()
@@ -106,7 +108,7 @@ func (service *Service) buildFunctionExecContext(template *template.Template, co
 
 	data, err := json.Marshal(ctx)
 	if err != nil {
-		log.Error("buildFunctionExecContext json marshal error, ", err)
+		log.Error("build function exec context: json marshal error, ", err)
 		return ""
 	}
 	return string(data)

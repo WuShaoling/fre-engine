@@ -21,7 +21,6 @@ type CgroupService struct {
 }
 
 func NewCgroupService() *CgroupService {
-	log.Info("NewCgroupService")
 	service := &CgroupService{
 		pool:    make([]string, 0, config.SysConfigInstance.CgroupPoolSize),
 		dataMap: make(map[string]*cgroups.Cgroup),
@@ -30,12 +29,13 @@ func NewCgroupService() *CgroupService {
 	// 构造缓存池
 	for i := 0; i < config.SysConfigInstance.CgroupPoolSize; i++ {
 		if id, err := service.newCgroup(nil); id == "" {
-			log.Fatal("new cgroup error", err)
+			log.Fatal("NewCgroupService: new cgroup error", err)
 		} else {
 			service.pool = append(service.pool, id)
 		}
 	}
 
+	log.Info("start cgroup service ok!")
 	return service
 }
 
@@ -91,7 +91,7 @@ func (service *CgroupService) getOrLoad(id string) *cgroups.Cgroup {
 	// map 找不到从本地 load
 	c, err := cgroups.Load(cgroups.V1, cgroups.StaticPath(cgroupPrefix+id))
 	if err != nil {
-		log.Errorf(fmt.Sprintf("load cgroup(id=%s) failed, ", id), err)
+		log.Errorf("load cgroup(id=%s) error, %+v", id, err)
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func (service *CgroupService) newCgroup(limit *template.ResourceLimit) (string, 
 
 	cgroup, err := cgroups.New(cgroups.V1, cgroups.StaticPath(cgroupPrefix+id), linuxResource)
 	if err != nil {
-		log.Error("new cgroup error, ", err)
+		log.Error("new cgroup error: ", err)
 		return "", err
 	}
 

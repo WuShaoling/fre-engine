@@ -24,12 +24,12 @@ func Exec() error {
 	// 查找可执行文件
 	path, err := exec.LookPath(command[0])
 	if err != nil {
-		log.Errorf("Exec loop path error %v", err)
+		log.Error("exec loop path error: ", err)
 		return err
 	}
 
 	if err := syscall.Exec(path, command[0:], os.Environ()); err != nil {
-		log.Errorf("syscall.Exec failed, error=%v", err.Error())
+		log.Error("exec error: ", err)
 		return err
 	}
 	return nil
@@ -41,11 +41,12 @@ func readFunctionContextFromPipe() ([]string, error) {
 
 	data, err := ioutil.ReadAll(pipe)
 	if err != nil {
-		log.Errorf("exec read pipe error %v", err)
+		log.Error("exec read pipe error: ", err)
 		return nil, err
 	}
 
 	command := string(data)
+
 	separatorIndex := strings.Index(command, "|")
 	entrypoint := command[:separatorIndex]
 	entrypointParam := command[separatorIndex+1:]
@@ -57,13 +58,13 @@ func readFunctionContextFromPipe() ([]string, error) {
 func setUpMount() error {
 	pwd, err := os.Getwd()
 	if err != nil {
-		log.Errorf("Get current location error %v", err)
+		log.Error("get current location error: ", err)
 		return err
 	}
 
 	err = syscall.Chroot(pwd)
 	if err != nil {
-		log.Errorf("chroot to %s error %v", pwd, err)
+		log.Errorf("chroot to %s error %+v", pwd, err)
 	}
 	return err
 

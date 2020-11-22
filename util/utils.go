@@ -1,6 +1,8 @@
 package util
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -76,4 +78,13 @@ func LoadJsonDataFromFile(filename string, v interface{}) {
 
 func UniqueId() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 10)
+}
+
+func Int16ToBytes(n int16) ([]byte, error) {
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	if err := binary.Write(bytesBuffer, binary.LittleEndian, n); err != nil {
+		log.Error("IntToBytes error, ", err)
+		return nil, err
+	}
+	return bytesBuffer.Bytes(), nil
 }

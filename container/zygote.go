@@ -6,6 +6,7 @@ import (
 	"engine/config"
 	"engine/runtime"
 	"engine/template"
+	"engine/util"
 	"errors"
 	log "github.com/sirupsen/logrus"
 	"net"
@@ -28,8 +29,6 @@ type ZygoteService struct {
 }
 
 func NewZygoteService(runtimeSet map[string]*runtime.Runtime, templateSet map[string]*template.Template) *ZygoteService {
-	log.Info("NewZygoteService")
-
 	service := &ZygoteService{
 		zygoteProcessUnixSocket:  make(map[string]*net.UnixConn),
 		runtimeZygoteProcessTree: make(map[string]ZygoteProcessTree),
@@ -40,43 +39,52 @@ func NewZygoteService(runtimeSet map[string]*runtime.Runtime, templateSet map[st
 	}
 	service.buildRuntimeZygoteProcessTree(runtimeSet, templateSet)
 
+	log.Info("start zygote service ok!")
 	return service
 }
 
-func (service *ZygoteService) NewContainerByZygoteProcess(runtimeName, templateName string, functionExecCtx string) error {
-	radixTree, ok := service.runtimeZygoteProcessTree[runtimeName]
+func (service *ZygoteService) NewContainerByZygoteProcess(runtimeName, templateName string, messageBody string) error {
+	log.Infof("new container by zygote process, runtime=%s, template=%s", runtimeName, templateName)
+
+	runtimeZygoteProcessTree, ok := service.runtimeZygoteProcessTree[runtimeName]
 	if !ok {
 		return errors.New("RuntimeNotSupportZygote")
 	}
 
-	zygoteProcess, ok := radixTree[templateName]
+	zygoteProcess, ok := runtimeZygoteProcessTree[templateName]
 	if !ok {
 		return errors.New("NoMatchZygoteProcessFound")
 	}
 
+	log.Infof("find matched zygote process, id=%s, pid=%s", zygoteProcess.id, zygoteProcess.cmd.Process.Pid)
 	unixSocket, ok := service.zygoteProcessUnixSocket[zygoteProcess.id]
 	if !ok {
 		return errors.New("ZygoteProcessUnixSocketNotFound")
 	}
-	_, err := unixSocket.Write([]byte(functionExecCtx))
 
+	msgHeader, err := util.Int16ToBytes(int16(len(messageBody)))
 	if err != nil {
-		log.Errorf("send new container command to zygoteProcess(id=%s, pid=%d) error, %v",
+		return err
+	}
+	_, err = unixSocket.Write(append(msgHeader, []byte(messageBody)...))
+	if err != nil {
+		log.Errorf("send command to zygoteProcess(id=%s, pid=%d) error, %+v",
 			zygoteProcess.id, zygoteProcess.cmd.Process.Pid, err)
 	}
+	log.Infof("send command to zygoteProcess(id=%s, pid=%d) ok", zygoteProcess.id, zygoteProcess.cmd.Process.Pid)
 	return err
 }
 
 func (service *ZygoteService) startUnixSocketServer() error {
 	unixAddr, err := net.ResolveUnixAddr("unix", config.SysConfigInstance.ZygoteUnixSocketFile)
 	if err != nil {
-		log.Error("ZygoteService ResolveUnixAddr error, ", err)
+		log.Error("zygote service: resolve unix address error, ", err)
 		return err
 	}
 
 	unixListener, err := net.ListenUnix("unix", unixAddr)
 	if err != nil {
-		log.Error("ZygoteService ListenUnix error, ", err)
+		log.Error("zygote service: listen unix error, ", err)
 		return err
 	}
 
@@ -84,18 +92,18 @@ func (service *ZygoteService) startUnixSocketServer() error {
 		for {
 			unixConn, err := unixListener.AcceptUnix()
 			if err != nil {
-				log.Error("ZygoteService AcceptUnix error, ", err)
+				log.Error("zygote service: accept unix error, ", err)
 				continue
 			}
-			log.Info("zygote process connected : " + unixConn.RemoteAddr().String())
 			// 异步等待 zygote process 注册
 			go func() {
 				reader := bufio.NewReader(unixConn)
 				if id, err := reader.ReadString('\n'); err != nil {
-					log.Error("startUnixSocketServer ReadString error, ", err)
+					log.Error("zygote service: read message error, ", err)
 					return
 				} else {
-					log.Info("receive zygote process register: ", id)
+					id = id[:len(id)-1]
+					log.Infof("zygote service: receive zygote process(id=%s) register", id)
 					service.zygoteProcessUnixSocket[id] = unixConn
 				}
 			}()
@@ -141,7 +149,7 @@ func (service *ZygoteService) newZygoteProcess(r *runtime.Runtime, t *template.T
 	}
 	data, err := json.Marshal(param)
 	if err != nil {
-		log.Error("newZygoteProcess build param error, ", err)
+		log.Errorf("new zygote process: build param error, runtime=%s, template=%s, error=%+v", r.Name, t.Name, err)
 		return nil
 	}
 
@@ -151,11 +159,11 @@ func (service *ZygoteService) newZygoteProcess(r *runtime.Runtime, t *template.T
 	cmd.Stderr = os.Stderr
 	cmd.Dir = path.Join(config.GetZygoteCodePath(), r.Name)
 	if err := cmd.Start(); err != nil {
-		log.Errorf("start zygote process error, runtime=%s, template=%s, error=%+v", r.Name, t.Name, err)
+		log.Errorf("new zygote process: start process error, runtime=%s, template=%s, error=%+v", r.Name, t.Name, err)
 		return nil
 	}
 
-	log.Infof("new zygote process for runtime(%s) template(%s), pid=%d", r.Name, t.Name, cmd.Process.Pid)
+	log.Infof("new zygote process: new zygote process for runtime(%s) template(%s), pid=%d", r.Name, t.Name, cmd.Process.Pid)
 	return &ZygoteProcess{
 		id:         id,
 		cmd:        cmd,
@@ -166,7 +174,7 @@ func (service *ZygoteService) newZygoteProcess(r *runtime.Runtime, t *template.T
 // 进程退出了
 func (service *ZygoteService) onZygoteProcessExit(runtimeName string, zygoteProcess *ZygoteProcess) {
 	_ = zygoteProcess.cmd.Wait()
-	log.Infof("onZygoteProcessExit, runtime=%s, id=%s", runtimeName, zygoteProcess.id)
+	log.Infof("on zygote process(id=%s) exit, runtime=%s", zygoteProcess.id, runtimeName)
 
 	if unixSock, ok := service.zygoteProcessUnixSocket[zygoteProcess.id]; ok {
 		_ = unixSock.Close()

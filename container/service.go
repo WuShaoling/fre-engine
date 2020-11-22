@@ -7,6 +7,7 @@ import (
 	"engine/util"
 	"errors"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"path"
 	"time"
 )
@@ -24,6 +25,7 @@ type Service struct {
 
 func NewContainerService(containerExitCallback chan gin.H, functionResultCallback chan gin.H,
 	runtimeSet map[string]*runtime.Runtime, templateSet map[string]*template.Template) *Service {
+
 	service := &Service{
 		onContainerExitCallback:  containerExitCallback,
 		onFunctionResultCallback: functionResultCallback,
@@ -35,11 +37,15 @@ func NewContainerService(containerExitCallback chan gin.H, functionResultCallbac
 		zygoteService: NewZygoteService(runtimeSet, templateSet),
 	}
 	util.LoadJsonDataFromFile(service.getDataFilePath(), &service.dataMap)
+
+	log.Info("start container service ok!")
 	return service
 }
 
 func (service *Service) Create(requestId string, runtime *runtime.Runtime, template *template.Template,
-	functionParam map[string]interface{}) (string, error) {
+	zygote string, functionParam map[string]interface{}) (string, error) {
+
+	log.Infof("create container: requestId=%s, runtime=%s, template=%s", requestId, runtime.Name, template.Name)
 
 	var err error
 	container := &Container{
@@ -69,9 +75,15 @@ func (service *Service) Create(requestId string, runtime *runtime.Runtime, templ
 	}
 
 	// 基于 zygote 创建或者直接启动容器
-	if err = service.newContainerProcessByZygote(runtime, template, container); err != nil {
+	if zygote == "true" {
+		if err = service.newContainerProcessByZygote(runtime, template, container); err != nil {
+			log.Warnf("new container by zygote failed, error=%+v", err)
+			err = service.newContainerProcessDirectly(runtime, template, container)
+		}
+	} else {
 		err = service.newContainerProcessDirectly(runtime, template, container)
 	}
+
 	if err != nil {
 		delete(service.dataMap, container.Id)
 		service.fsService.CleanContainerFs(container.BaseFsPath)

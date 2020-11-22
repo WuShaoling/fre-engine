@@ -36,7 +36,7 @@ func (engine *Engine) ContainerProcessStart(ctx *gin.Context) {
 		return
 	}
 
-	timestamp, err := strconv.ParseInt(pidStr, 10, 64)
+	timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
 	if err != nil {
 		log.Errorf("ContainerProcessEnd: id=%s, pid=%s, timestamp=%s, error=%v", id, pidStr, timestampStr, err)
 		return
