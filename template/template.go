@@ -1,8 +1,9 @@
 package template
 
 type Template struct { // 函数模版
-	Name    string `json:"name" binding:"required"`    // 函数名, 唯一
-	Version string `json:"version" binding:"required"` // 版本
+	Name        string `json:"name" binding:"required"`    // 函数名, 唯一
+	Version     string `json:"version" binding:"required"` // 版本
+	Description string `json:"description"`                // 描述信息
 
 	Runtime    string   `json:"runtime" binding:"required"` // 基础环境
 	Handler    string   `json:"handler" binding:"required"` // 函数入口文件
