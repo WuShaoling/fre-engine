@@ -66,9 +66,4 @@ func setUpMount() error {
 		log.Errorf("chroot to %s error %+v", pwd, err)
 	}
 	return err
-
-	//merge proc
-	//defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	//syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
-	//syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
 }

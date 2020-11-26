@@ -20,17 +20,12 @@ func NewRuntimeService() *Service {
 	return runtime
 }
 
-func (service *Service) Get(name string) (runtime *Runtime, ok bool) {
-	runtime, ok = service.dataMap[name]
-	return
+func (service *Service) Get(name string) *Runtime {
+	return service.dataMap[name]
 }
 
 func (service *Service) List() map[string]*Runtime {
 	return service.dataMap
-}
-
-func (service *Service) Dump() error {
-	return util.WriteJsonDataToFile(service.getDataFilePath(), service.dataMap)
 }
 
 func (service *Service) getDataFilePath() string {

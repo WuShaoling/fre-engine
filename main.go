@@ -1,30 +1,28 @@
 package main
 
 import (
-	"engine/api"
 	"engine/config"
 	"engine/container"
-	"engine/service"
+	"engine/runtime"
+	"engine/template"
 	"flag"
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
-	"log"
 	"os"
+	"time"
 )
 
 var configPath string
+var count int
+var parallel bool
+var zygote bool
+var runtimeName string
+var templateName string
 
 func init() {
-	flag.StringVar(&configPath, "c", "", "config path")
-}
-
-func initLog() {
-	customFormatter := new(logrus.TextFormatter)
-	customFormatter.FullTimestamp = true                    // 显示完整时间
-	customFormatter.TimestampFormat = "2006-01-02 15:04:05" // 时间格式
-	customFormatter.DisableTimestamp = false                // 禁止显示时间
-	customFormatter.DisableColors = false                   // 禁止颜色显示
-	logrus.SetFormatter(customFormatter)
+	flag.IntVar(&count, "n", 1, "创建的数量")
+	flag.BoolVar(&parallel, "p", false, "并发启动")
+	flag.BoolVar(&zygote, "zygote", false, "并发启动")
+	flag.StringVar(&runtimeName, "runtime", "python3.7", "并发启动")
+	flag.StringVar(&templateName, "template", "normal", "并发启动")
 }
 
 func main() {
@@ -33,16 +31,25 @@ func main() {
 		return
 	}
 
-	initLog()
 	flag.Parse()
-
 	config.InitSysConfig(configPath)
-	gin.SetMode(gin.ReleaseMode)
 
-	freEngine := service.NewEngine()
-	r := gin.Default()
-	api.SetContainerRouter(freEngine, r)
+	runtimeService := runtime.NewRuntimeService()
+	templateService := template.NewTemplateService()
+	containerService := container.NewContainerService(runtimeService.List(), templateService.List())
+	r := runtimeService.Get(runtimeName)
+	t := templateService.Get(templateName)
 
-	log.Println("server listen on :" + config.SysConfigInstance.ServePort)
-	_ = r.Run(":" + config.SysConfigInstance.ServePort)
+	if parallel {
+		for i := 0; i < count; i++ {
+			go func(id int) {
+				_, _ = containerService.Create(id, r, t, zygote, map[string]interface{}{})
+			}(i)
+		}
+	} else {
+		for i := 0; i < count; i++ {
+			_, _ = containerService.Create(i, r, t, zygote, map[string]interface{}{})
+		}
+	}
+	time.Sleep(time.Hour)
 }

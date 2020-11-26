@@ -1,4 +1,10 @@
 {
+  "base": {
+    "name": "base",
+    "entrypoint": [
+      "pause"
+    ]
+  },
   "python3.7": {
     "name": "python3.7",
     "entrypoint": [

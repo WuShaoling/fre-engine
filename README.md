@@ -3,6 +3,59 @@
 Function Runtime Environment Engine
 
 
+## 测试
+
+1. 构建测试环境
+
+部分系统未安装 python3 或者缺少相关的库，所以这里使用 docker python:3.7 环境来作为基础环境
+
+构建镜像:
+
+```bash
+docker build -t python/free/bench:3.7
+```
+
+2. 构建可执行文件
+
+```bash
+sh build.sh
+```
+
+6.1.1 顺序启动
+
+```bash
+docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -n 32"
+
+docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -n 64"
+
+docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -n 128"
+
+docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -n 256"
+
+docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -n 512"
+``` 
+
+6.1.2 并发启动
+
+```bash
+clear && docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -p -n 32"
+
+clear && docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -p -n 64"
+
+clear && docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -p -n 128"
+
+clear && docker run --rm -it -v /free:/free --privileged python/free/bench:3.7 \
+    bash -c "cd /free && rm -rf workspace/container/* && ./free -runtime base -p -n 256"
+``` 
+
 ## 相关概念
 
 - Runtime: 运行时环境，基础环境
@@ -68,5 +121,3 @@ curl -X POST \
 	"key2": "world"
 }'
 ```
-
-docker restart 0ef83d3a156a && docker exec -it 0ef83d3a156a bash -c "cd /free && rm -rf workspace/container/* && ./free"
