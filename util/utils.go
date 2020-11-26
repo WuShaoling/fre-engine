@@ -6,11 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
-	"strconv"
-	"time"
 )
 
 func MkdirIfNotExist(p string) error {
@@ -77,7 +76,8 @@ func LoadJsonDataFromFile(filename string, v interface{}) {
 }
 
 func UniqueId() string {
-	return strconv.FormatInt(time.Now().UnixNano(), 10)
+	return uuid.New().String()
+	//return strconv.FormatInt(time.Now().UnixNano()/1e3, 10)
 }
 
 func Int16ToBytes(n int16) ([]byte, error) {

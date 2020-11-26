@@ -2,6 +2,7 @@ package container
 
 import (
 	"engine/config"
+	"engine/util"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -16,15 +17,23 @@ const (
 )
 
 type FsService struct {
+	fsPool chan string
 }
 
 func NewFsService() *FsService {
 	log.Info("start fs service ok!")
-	return &FsService{
+	service := &FsService{
+		fsPool: make(chan string, config.SysConfigInstance.RootfsPoolSize),
 	}
+	service.initPool()
+	return service
 }
 
-func (service *FsService) NewContainerFs(id, runtime string) (string, error) {
+func (service *FsService) Get(id, runtime string) string {
+	return <-service.fsPool
+}
+
+func (service *FsService) newContainerFs(id, runtime string) (string, error) {
 	basePath := path.Join(config.GetContainerFsPath(), id)
 	lowerPath := path.Join(config.GetRuntimePath(), runtime)
 	mergePath := path.Join(basePath, MergePath)
@@ -60,6 +69,7 @@ func (service *FsService) NewContainerFs(id, runtime string) (string, error) {
 		return "", err
 	}
 
+	// TODO 挂载数据目录
 	return basePath, nil
 }
 
@@ -74,4 +84,34 @@ func (service *FsService) GetContainerRootFsPath(basePath string) string {
 
 func (service *FsService) GetContainerFunctionCodePath(templateName string) string {
 	return path.Join(config.SysConfigInstance.ContainerCodePath, templateName)
+}
+
+func (service *FsService) initPool() {
+	for i := 0; i < config.SysConfigInstance.RootfsPoolSize; i++ {
+		basePath, err := service.newContainerFs(util.UniqueId(), "python3.7")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			service.fsPool <- basePath
+		}
+	}
+
+	for i := 0; i < 4; i++ { // 4个生产者同时生产
+		go func(id int) {
+			errorCount := 0
+			for {
+				basePath, err := service.newContainerFs(util.UniqueId(), "python3.7")
+				if err == nil {
+					service.fsPool <- basePath
+					errorCount = 0
+				} else {
+					errorCount++
+					if errorCount > 16 {
+						log.Errorf("fs producer(id=%d) too many errors, exit", id)
+						return
+					}
+				}
+			}
+		}(i)
+	}
 }

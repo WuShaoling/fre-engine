@@ -28,13 +28,13 @@ func initLog() {
 }
 
 func main() {
-	initLog()
-	flag.Parse()
-
 	if len(os.Args) >= 2 && os.Args[1] == "exec" { // 容器进程
-		_ = container.Exec()
+		container.Exec()
 		return
 	}
+
+	initLog()
+	flag.Parse()
 
 	config.InitSysConfig(configPath)
 	gin.SetMode(gin.ReleaseMode)

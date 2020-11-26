@@ -12,6 +12,7 @@ type SysConfig struct {
 	RootPath             string `yaml:"rootPath"`             // 应用根目录
 	ZygoteMaxMemory      int    `yaml:"zygoteMaxMemory"`      // zygote 池最大内存，MB
 	CgroupPoolSize       int    `yaml:"cgroupPoolSize"`       // cgroup 缓存池大小
+	RootfsPoolSize       int    `yaml:"rootfsPoolSize"`       // rootfs 缓存池大小
 	ServePort            string `yaml:"servePort"`            // 服务监听的地址
 	ContainerCodePath    string `yaml:"containerCodePath"`    // 容器内代码的根目录
 	ZygoteUnixSocketFile string `yaml:"zygoteUnixSocketFile"` // 容器内代码的根目录
@@ -34,7 +35,8 @@ func useDefaultConfig() {
 	SysConfigInstance = &SysConfig{
 		RootPath:             "./workspace",
 		ZygoteMaxMemory:      1024,
-		CgroupPoolSize:       2,
+		CgroupPoolSize:       256,
+		RootfsPoolSize:       256,
 		ServePort:            "80",
 		ContainerCodePath:    "/code",
 		ZygoteUnixSocketFile: "/tmp/free.zygote.sock",

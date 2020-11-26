@@ -9,30 +9,29 @@ import (
 	"syscall"
 )
 
-func Exec() error {
+func Exec() {
 	// read command from pipe
 	command, err := readFunctionContextFromPipe()
 	if err != nil {
-		return err
+		return
 	}
 
 	// chroot
 	if err := setUpMount(); err != nil {
-		return err
+		return
 	}
 
 	// 查找可执行文件
 	path, err := exec.LookPath(command[0])
 	if err != nil {
 		log.Error("exec loop path error: ", err)
-		return err
+		return
 	}
 
 	if err := syscall.Exec(path, command[0:], os.Environ()); err != nil {
 		log.Error("exec error: ", err)
-		return err
+		return
 	}
-	return nil
 }
 
 func readFunctionContextFromPipe() ([]string, error) {

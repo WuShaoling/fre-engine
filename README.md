@@ -68,3 +68,5 @@ curl -X POST \
 	"key2": "world"
 }'
 ```
+
+docker restart 0ef83d3a156a && docker exec -it 0ef83d3a156a bash -c "cd /free && rm -rf workspace/container/* && ./free"

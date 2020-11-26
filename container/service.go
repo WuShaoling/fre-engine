@@ -5,10 +5,11 @@ import (
 	"engine/runtime"
 	"engine/template"
 	"engine/util"
-	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"path"
+	"sync"
 	"time"
 )
 
@@ -16,7 +17,8 @@ type Service struct {
 	onContainerExitCallback  chan gin.H
 	onFunctionResultCallback chan gin.H
 
-	dataMap map[string]*Container
+	dataMap     map[string]*Container
+	dataMapLock sync.RWMutex
 
 	fsService     *FsService
 	cgroupService *CgroupService
@@ -57,22 +59,28 @@ func (service *Service) Create(requestId string, runtime *runtime.Runtime, templ
 			ContainerCreateAt: time.Now().UnixNano() / 1e3,
 		},
 	}
-	service.dataMap[container.Id] = container
+	service.setContainerToStore(container)
 
-	//// 获取 cgroup
-	//container.CgroupId, err = service.cgroupService.Get(&template.ResourceLimit)
-	//if container.CgroupId == "" {
-	//	delete(service.dataMap, container.Id)
-	//	return "", errors.New("NewCgroupError")
-	//}
+	// 获取 cgroup
+	if template.ResourceLimit != nil {
+		container.CgroupId, err = service.cgroupService.Get(template.ResourceLimit)
+		if err != nil {
+			service.onCreateError(container)
+			return "", err
+		}
+	}
 
 	// new file system
-	container.BaseFsPath, err = service.fsService.NewContainerFs(container.Id, template.Runtime)
-	if err != nil {
-		delete(service.dataMap, container.Id)
-		service.cgroupService.GiveBack(container.CgroupId)
-		return "", errors.New("NewRootFsError")
-	}
+	t1 := time.Now().UnixNano() / 1e3
+	container.BaseFsPath = service.fsService.Get(container.Id, template.Runtime)
+	t2 := time.Now().UnixNano() / 1e3
+	fmt.Println("---->service.fsService.Get(): ", t2-t1)
+	//// new file system
+	//container.BaseFsPath, err = service.fsService.Get(container.Id, template.Runtime)
+	//if err != nil {
+	//	service.onCreateError(container)
+	//	return "", err
+	//}
 
 	// 基于 zygote 创建或者直接启动容器
 	if zygote == "true" {
@@ -85,13 +93,21 @@ func (service *Service) Create(requestId string, runtime *runtime.Runtime, templ
 	}
 
 	if err != nil {
-		delete(service.dataMap, container.Id)
-		service.fsService.CleanContainerFs(container.BaseFsPath)
-		service.cgroupService.GiveBack(container.CgroupId)
+		service.onCreateError(container)
 		return "", err
 	}
 
 	return container.Id, nil
+}
+
+func (service *Service) onCreateError(container *Container) {
+	service.deleteContainerFromStore(container.Id)
+	if container.BaseFsPath != "" {
+		service.fsService.CleanContainerFs(container.BaseFsPath)
+	}
+	if container.CgroupId != "" {
+		service.cgroupService.GiveBack(container.CgroupId)
+	}
 }
 
 func (service *Service) Get(name string) (container *Container, ok bool) {
