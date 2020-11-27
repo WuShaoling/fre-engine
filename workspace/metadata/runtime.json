@@ -15,12 +15,5 @@
       "python3",
       "core.py"
     ]
-  },
-  "node12": {
-    "name": "node12",
-    "entrypoint": [
-      "node",
-      "/bootstrap.js"
-    ]
   }
 }

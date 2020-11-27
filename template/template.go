@@ -6,7 +6,7 @@ type Template struct { // 函数模版
 	Description string `json:"description"`                // 描述信息
 
 	Runtime    string   `json:"runtime" binding:"required"` // 基础环境
-	Handler    string   `json:"handler" binding:"required"` // 函数入口文件
+	Handler    string   `json:"handler"`                    // 函数入口文件
 	Volume     string   `json:"volume"`                     // 数据卷挂载目录
 	Packages   []string `json:"packages"`                   // 依赖包
 	SharedLibs []string `json:"sharedLibs"`                 // 基础环境之外所需的共享库

@@ -24,11 +24,12 @@ type Timestamp struct {
 
 // 运行函数的上下文
 type FunctionExecContext struct {
-	Id         string                 `json:"id"`         // 函数实例 id
-	CodePath   string                 `json:"codePath"`   // 函数代码的路径，/code/templateName
-	Handler    string                 `json:"handler"`    // 代码的入口文件
-	Params     map[string]interface{} `json:"params"`     // 函数的参数
-	ServePort  string                 `json:"servePort"`  // server 的地址，用于和server通信
-	RootFsPath string                 `json:"rootFsPath"` // 根文件系统路径
-	CgroupId   string                 `json:"cgroupId"`
+	Id                string                 `json:"id"`         // 函数实例 id
+	CodePath          string                 `json:"codePath"`   // 函数代码的路径，/code/templateName
+	Handler           string                 `json:"handler"`    // 代码的入口文件
+	Params            map[string]interface{} `json:"params"`     // 函数的参数
+	ServePort         string                 `json:"servePort"`  // server 的地址，用于和server通信
+	RootFsPath        string                 `json:"rootFsPath"` // 根文件系统路径
+	CgroupId          string                 `json:"cgroupId"`
+	ContainerCreateAt int64                  `json:"containerCreateAt"`
 }

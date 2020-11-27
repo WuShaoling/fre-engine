@@ -12,17 +12,18 @@ import (
 
 var configPath string
 var count int
-var parallel bool
 var zygote bool
+var parallel bool
 var runtimeName string
 var templateName string
 
 func init() {
-	flag.IntVar(&count, "n", 1, "创建的数量")
-	flag.BoolVar(&parallel, "p", false, "并发启动")
-	flag.BoolVar(&zygote, "zygote", false, "并发启动")
-	flag.StringVar(&runtimeName, "runtime", "python3.7", "并发启动")
-	flag.StringVar(&templateName, "template", "normal", "并发启动")
+	flag.StringVar(&configPath, "c", "", "")
+	flag.IntVar(&count, "n", 1, "")
+	flag.BoolVar(&zygote, "zygote", false, "")
+	flag.BoolVar(&parallel, "p", false, "")
+	flag.StringVar(&runtimeName, "runtime", "python3.7", "")
+	flag.StringVar(&templateName, "template", "echo", "")
 }
 
 func main() {
@@ -40,6 +41,7 @@ func main() {
 	r := runtimeService.Get(runtimeName)
 	t := templateService.Get(templateName)
 
+	time.Sleep(3 * time.Second)
 	if parallel {
 		for i := 0; i < count; i++ {
 			go func(id int) {

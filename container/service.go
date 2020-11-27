@@ -50,10 +50,11 @@ func (service *Service) Create(id int, runtime *runtime.Runtime, template *templ
 	}
 
 	// new file system
-	//t1 := time.Now().UnixNano() / 1e3
-	container.BaseFsPath = service.fsService.Get(container.Id, template.Runtime)
-	//t2 := time.Now().UnixNano() / 1e3
-	//fmt.Println("---->service.fsService.Get(): ", t2-t1)
+	container.BaseFsPath, err = service.fsService.Get(container.Id, template.Runtime)
+	if err != nil {
+		service.onCreateError(container)
+		return "", err
+	}
 
 	// 基于 zygote 创建或者直接启动容器
 	if zygote {

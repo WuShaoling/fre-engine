@@ -108,13 +108,14 @@ func (service *Service) onNewContainerProcessDirectlyError(readPipe *os.File, co
 
 func (service *Service) buildFunctionExecContext(template *template.Template, container *Container) string {
 	ctx := FunctionExecContext{
-		Id:         container.Id,
-		CodePath:   service.fsService.GetContainerFunctionCodePath(template.Name),
-		Handler:    template.Handler,
-		Params:     container.FunctionParam,
-		ServePort:  config.SysConfigInstance.ServePort,
-		RootFsPath: service.fsService.GetContainerRootFsPath(container.BaseFsPath),
-		CgroupId:   container.CgroupId,
+		Id:                container.Id,
+		CodePath:          service.fsService.GetContainerFunctionCodePath(template.Name),
+		Handler:           template.Handler,
+		Params:            container.FunctionParam,
+		ServePort:         config.SysConfigInstance.ServePort,
+		RootFsPath:        service.fsService.GetContainerRootFsPath(container.BaseFsPath),
+		CgroupId:          container.CgroupId,
+		ContainerCreateAt: container.Timestamp.ContainerCreateAt,
 	}
 
 	data, err := json.Marshal(ctx)

@@ -1,44 +1,27 @@
 {
-  "normal": {
-    "name": "normal",
-    "description": "正常模式下函数不依赖其它包",
+  "base": {
+    "name": "base",
+    "version:": "0.1",
+    "runtime": "base",
+    "resourceLimit": {
+      "memory": 1073741824,
+      "cpuShares": 1024
+    }
+  },
+  "echo": {
+    "name": "echo",
     "version:": "0.1",
     "runtime": "python3.7",
     "handler": "index",
-    "volume": "/data",
-    "packages": [],
-    "sharedLibs": [],
-    "envs": [],
-    "timeout": 10
+    "packages": []
   },
-  "stress": {
-    "name": "stress",
-    "description": "依赖依赖多个包，不预加载 ",
-    "version:": "0.1",
-    "runtime": "python3.7",
-    "handler": "index",
-    "volume": "/data",
-    "packages": [],
-    "sharedLibs": [],
-    "envs": [],
-    "timeout": 10
-  },
-  "zygote": {
-    "name": "zygote",
-    "description": "函数依赖多个包，预加载",
+  "django": {
+    "name": "django",
     "version:": "0.1",
     "runtime": "python3.7",
     "handler": "index",
     "packages": [
-      "numpy",
-      "scipy",
-      "pandas",
-      "django",
-      "matplotlib"
-    ],
-    "volume": "/data",
-    "sharedLibs": [],
-    "envs": [],
-    "timeout": 10
+      "django"
+    ]
   }
 }

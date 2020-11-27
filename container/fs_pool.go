@@ -29,13 +29,26 @@ func NewFsService() *FsService {
 	return service
 }
 
-func (service *FsService) Get(id, runtime string) string {
-	return <-service.fsPool
+func (service *FsService) Get(id, runtime string) (string, error) {
+	basePath := <-service.fsPool
+	lowerPath := path.Join(config.GetRuntimePath(), runtime)
+	mergePath := path.Join(basePath, MergePath)
+	upperPath := path.Join(basePath, UpperPath)
+	workerPath := path.Join(basePath, WorkerPath)
+
+	data := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", lowerPath, upperPath, workerPath)
+	if err := syscall.Mount("overlay", mergePath, "overlay", 0, data); err != nil {
+		log.Errorf("overlay mount for container %s error, data=%s, mountPath=%s, error=%v", id, data, mergePath, err)
+		_ = os.RemoveAll(basePath)
+		return "", err
+	}
+
+	// TODO 挂载数据目录
+	return basePath, nil
 }
 
 func (service *FsService) newContainerFs(id, runtime string) (string, error) {
 	basePath := path.Join(config.GetContainerFsPath(), id)
-	lowerPath := path.Join(config.GetRuntimePath(), runtime)
 	mergePath := path.Join(basePath, MergePath)
 	upperPath := path.Join(basePath, UpperPath)
 	workerPath := path.Join(basePath, WorkerPath)
@@ -62,14 +75,6 @@ func (service *FsService) newContainerFs(id, runtime string) (string, error) {
 		return "", err
 	}
 
-	data := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", lowerPath, upperPath, workerPath)
-	if err := syscall.Mount("overlay", mergePath, "overlay", 0, data); err != nil {
-		log.Errorf("overlay mount for container %s error, data=%s, mountPath=%s, error=%v", id, data, mergePath, err)
-		_ = os.RemoveAll(basePath)
-		return "", err
-	}
-
-	// TODO 挂载数据目录
 	return basePath, nil
 }
 

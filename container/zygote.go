@@ -56,7 +56,7 @@ func (service *ZygoteService) NewContainerByZygoteProcess(runtimeName, templateN
 		return errors.New("NoMatchZygoteProcessFound")
 	}
 
-	log.Infof("find matched zygote process, id=%s, pid=%s", zygoteProcess.id, zygoteProcess.cmd.Process.Pid)
+	//log.Infof("find matched zygote process, id=%s, pid=%d", zygoteProcess.id, zygoteProcess.cmd.Process.Pid)
 	unixSocket, ok := service.zygoteProcessUnixSocket[zygoteProcess.id]
 	if !ok {
 		return errors.New("ZygoteProcessUnixSocketNotFound")
@@ -71,7 +71,7 @@ func (service *ZygoteService) NewContainerByZygoteProcess(runtimeName, templateN
 		log.Errorf("send command to zygoteProcess(id=%s, pid=%d) error, %+v",
 			zygoteProcess.id, zygoteProcess.cmd.Process.Pid, err)
 	}
-	log.Infof("send command to zygoteProcess(id=%s, pid=%d) ok", zygoteProcess.id, zygoteProcess.cmd.Process.Pid)
+	//log.Infof("send command to zygoteProcess(id=%s, pid=%d) ok", zygoteProcess.id, zygoteProcess.cmd.Process.Pid)
 	return err
 }
 
