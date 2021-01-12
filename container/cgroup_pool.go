@@ -76,6 +76,7 @@ func (service *CgroupService) Set(id string, pid int) error {
 	}
 
 	err := (*c).Add(cgroups.Process{Pid: pid})
+	(*c).Delete()
 	if err != nil {
 		log.Errorf("add pid(%d) to cgroup(%s) error, %+v", pid, id, err)
 	}
